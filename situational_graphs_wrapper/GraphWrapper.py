@@ -4,6 +4,7 @@ import copy
 from networkx.algorithms import isomorphism
 import matplotlib.pyplot as plt
 import itertools
+import os
 
 
 SCORE_THR = 0.9
@@ -321,11 +322,15 @@ class GraphWrapper():
         mapping = dict(zip(raw_node_ids, str_node_ids))
         self.relabel_nodes(mapping)
 
-    def find_recursive_simple_cycles(self):
-        graph = copy.deepcopy(self.graph)
-        graph = graph.to_directed()
-        simple_cycles = nx.recursive_simple_cycles(graph)
-        return simple_cycles
+    def find_recursive_simple_cycles(self, length_bound = None):
+        # Enumerating every simple cycle is exponential in the number of edges and
+        # callers only keep short ones (rooms = 3/4 walls): bound the search.
+        # SGR_LEGACY_CYCLES=1 restores the unbounded enumeration for comparison.
+        if length_bound is None or os.environ.get("SGR_LEGACY_CYCLES") == "1":
+            graph = copy.deepcopy(self.graph)
+            graph = graph.to_directed()
+            return nx.recursive_simple_cycles(graph)
+        return list(nx.simple_cycles(nx.Graph(self.graph), length_bound = length_bound))
     
     def translate_attr_all_nodes(self, attr_name, addition):
         values_dict = {}
